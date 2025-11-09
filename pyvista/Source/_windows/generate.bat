@@ -1,0 +1,1 @@
+pyside6-uic plot_window.ui -o plot_window.py
