@@ -29,9 +29,9 @@
    <item row="0" column="0">
     <layout class="QGridLayout" name="gridLayout" rowstretch="1,1">
      <item row="0" column="0">
-      <widget class="QCheckBox" name="chkAxes">
+      <widget class="QCheckBox" name="chkAxis">
        <property name="text">
-        <string>Axes on/off</string>
+        <string>Axis on/off</string>
        </property>
       </widget>
      </item>

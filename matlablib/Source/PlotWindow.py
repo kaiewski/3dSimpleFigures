@@ -24,21 +24,21 @@ class PlotWindow(QWidget):
 		self.setWindowTitle('3D matplotlib model test')
 		self.ui.framePlot.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 		self.chart = Canvas(self.ui.framePlot)
-		self.ui.chkAxes.clicked.connect(self.change_axes_state)
+		self.ui.chkAxis.clicked.connect(self.change_axis_state)
 
 	def draw_basic_model(self) -> None:
 		"""Draw a model of a capacitor."""
 		self.chart.draw_capacitor(2, [0, np.linspace(0, 1, 2), 0], [1, np.linspace(0, 1, 2), 0], 0.2)
 
-	def change_axes_state(self) -> None:
-		"""Switch XYZ axes."""
+	def change_axis_state(self) -> None:
+		"""Switch XYZ axis."""
 		self.chart.clear_plot()
 
-		if self.ui.chkAxes.checkState() == Qt.Checked:
-			self.chart.draw_arrow_axes(0.1, True)
+		if self.ui.chkAxis.checkState() == Qt.Checked:
+			self.chart.draw_arrow_axis(0.1, True)
 			self.draw_basic_model()
 			return
 
-		self.chart.draw_arrow_axes(0.1, False)
+		self.chart.draw_arrow_axis(0.1, False)
 		self.draw_basic_model()
 
