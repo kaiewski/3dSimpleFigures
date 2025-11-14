@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import numpy as np
+from mpl_toolkits.mplot3d import proj3d
 from PySide6.QtWidgets import QFrame
 from matplotlib.figure import Figure
+from matplotlib.backend_bases import MouseEvent
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 
 class Canvas(FigureCanvas):
@@ -16,6 +19,9 @@ class Canvas(FigureCanvas):
 		
 		self.canvas = FigureCanvas(self.figure)
 		self.axis = self.figure.add_subplot(111, projection='3d')
+		self.last_click_point = None
+		self.mpl_connect('button_press_event', self.on_click)
+
 		self.clear_plot()
 
 		super().__init__(self.figure)
@@ -32,6 +38,8 @@ class Canvas(FigureCanvas):
 		"""
 
 		[x, y, z] = self.calculate_capacitor_sizes(XYZ_start, XYZ_end, electrode_distance)
+
+		self.set_data_points(x, y, z, electrode_distance)
 
 		N = point_quanity
 
@@ -72,3 +80,70 @@ class Canvas(FigureCanvas):
 		self.axis.set_axis_off()
 		self.axis.set(xlim=(0, 1), ylim=(0, 1), zlim=(0, 1))
 		self.axis.set_aspect('equal', 'box')
+
+	def on_click(self, event: MouseEvent) -> None:
+		"""Handle mouse click events."""
+		if event.inaxes != self.axis:
+			return
+
+		if str(event.button) != 'MouseButton.RIGHT':
+			return
+
+		self.clear_selection()
+		x2d, y2d = event.xdata, event.ydata
+		closest_point = self.find_closest_data_point(x2d, y2d)
+		
+		if closest_point is not None:
+			self.last_click_point = closest_point
+			x3d, y3d, z3d = closest_point
+			print(f"Clicked position: \tx={x3d:.2f}, y={y3d:.2f}, z={z3d:.2f}")
+			
+			self.axis.scatter([x3d], [y3d], [z3d], color='red', s=100, marker='o', zorder=100)
+			self.draw_idle()
+	
+	def find_closest_data_point(self, x2d: np.float64, y2d: np.float64) -> tuple | None:
+		"""Find a closest point from data with points position."""
+		if not self.data_points:
+			return None
+					
+		min_distance = float('inf')
+		closest_point = None
+		
+		for point in self.data_points:
+			x3d, y3d, z3d = point
+			x2d_proj, y2d_proj, _ = proj3d.proj_transform(x3d, y3d, z3d, self.axis.get_proj())			
+			distance = np.sqrt((x2d_proj - x2d)**2 + (y2d_proj - y2d)**2)
+			
+			if distance < min_distance:
+				min_distance = distance
+				closest_point = point
+
+		return closest_point
+	
+	def set_data_points(self, x_coords: list, y_coords: list, z_coords: list, electrode_distance: float = 0.2) -> None:
+		"""Set data points to find the closest point, taking into account the distance between electrodes."""
+		self.data_points = []
+		
+		for i in range(len(x_coords)):
+			y_start = y_coords[i][0]
+			y_end = y_coords[i][1]
+			
+			self.data_points.append((x_coords[i], y_start, 0))
+			self.data_points.append((x_coords[i], y_end, 0))	        
+			self.data_points.append((x_coords[i], y_start, electrode_distance))
+			self.data_points.append((x_coords[i], y_end, electrode_distance))
+
+	def clear_selection(self) -> None:
+		"""Clear point selection."""
+		self.last_click_point = None
+		collections_to_remove = []
+		for collection in self.axis.collections:
+			if (hasattr(collection, '_facecolors') and 
+				len(collection._facecolors) > 0 and
+				np.allclose(collection._facecolors[0], [1, 0, 0, 1])):
+				collections_to_remove.append(collection)
+		
+		for collection in collections_to_remove:
+			collection.remove()
+		
+		self.draw_idle()
