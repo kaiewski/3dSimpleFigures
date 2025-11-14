@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import numpy
 import pyvista as pv
 from pyvista.core.pointset import PolyData
 from pyvistaqt import QtInteractor
@@ -14,6 +15,7 @@ class Canvas():
 
 		self.plotter = QtInteractor(frame)
 		self.plotter.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
 		self.axis_actors = []
 
 	def draw_capacitor(self, bottom_electrode: PolyData, top_electrode: PolyData) -> None:
@@ -30,11 +32,24 @@ class Canvas():
 
 		self.plotter.camera_position = 'xy'
 		self.plotter.reset_camera()
+		self.setup_plotter_picker()
 		self.plotter.update()
+
+	def setup_plotter_picker(self, tolerance: float = 0.1, point_size: int = 10) -> None:
+		"""Setup the point picking function."""
+		self.plotter.enable_point_picking(
+				show_message=False,
+				callback=self.clicked_point,
+				tolerance=tolerance, 
+				point_size=point_size)
+
+	def clicked_point(self, point: numpy.ndarray) -> None:
+		"""Show position of click."""
+		point = [round(i, 5) for i in point.tolist()]
+		print(f'Clicked position: \tx = {point[0]}, y = {point[1]}, z = {point[2]}')
 
 	def draw_arrow_axis(self, arrow_length: float = 0.1, enable_axis: bool = True) -> None:
 		"""Draw an axis arrows."""
-
 		for actor in self.axis_actors:
 			self.plotter.remove_actor(actor)
 		self.axis_actors = []
